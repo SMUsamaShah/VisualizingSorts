@@ -1,20 +1,9 @@
-# VisualizingSorts
+# Visualize and Listen to sorting algorithms
 
-Visualize sorting algorithms side by side
+Demo Link: https://smusamashah.github.io/VisualizingSorts/sorting.html
 
-<div class="video_container">
-  <video playsinline autoplay allowfullscreen="true">
-    <source src="merge-vs-heap.webm" type="video/webm">
-  </video> 
-</div>
+Screenshots:
 
-
-
-
-
-
-
-
-
-
-
+![Screenshot 1](screenshot1.png)
+![Screenshot 1](screenshot2.png)
+![Screenshot 1](screenshot3.png)
