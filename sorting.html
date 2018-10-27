@@ -1,5 +1,16 @@
 <html>
+    <head>
+        <meta name="google-site-verification" content="fcsy6xwzGDIwyzoNhlebWTJvbkmQNzPNwrpy0YpIqHI" />
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-8113893-21"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
 
+          gtag('config', 'UA-8113893-21');
+        </script>
+    </head>
 <body>
     <style>
         #container {
@@ -15,13 +26,10 @@
         }
     </style>
     <div id="container">
-        <!-- <video playsinline autoplay></video> -->
         <canvas id="cvs" width="512" height="512"></canvas>
-        <!-- <canvas id="cvs_plot" width="512" height="512"></canvas> -->
         <div id="algonames"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.3/dat.gui.js"></script>
-    <script src="/MyWork/CanvasRecorder.js"></script>
     <script type="text/javascript">
         var wizSorting = new WizSorting();
         var gui = new dat.GUI();
