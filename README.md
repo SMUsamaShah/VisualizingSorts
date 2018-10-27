@@ -1,8 +1,8 @@
 # Visualize and Listen to sorting algorithms
 
-Videos: https://smusamashah.github.io/blog/2018/10/26/sorting-algorithms
-
 Demo Link: https://smusamashah.github.io/VisualizingSorts/sorting.html
+
+Details: https://smusamashah.github.io/blog/2018/10/26/sorting-algorithms
 
 Screenshots:
 
