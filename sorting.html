@@ -42,20 +42,20 @@
     <script type="text/javascript">
         var wizSorting = new WizSorting();
         var gui = new dat.GUI();
-        gui.add(wizSorting, 'audio');
-        gui.add(wizSorting, 'arraySize', 8, 512, 8);
-        gui.add(wizSorting, 'stepDelay', 1, 1000, 1)
-        gui.add(wizSorting, 'detail', 1, 3, 1);
+        gui.add(wizSorting, 'audio').name("Sound");
+        gui.add(wizSorting, 'arraySize', 8, 512, 8).name("Size");
+        gui.add(wizSorting, 'stepDelay', 1, 1000, 1).name("Delay(ms)");
+        gui.add(wizSorting, 'detail', 1, 3, 1).name("Detail");
 
-        gui.add(wizSorting, 'color_map', Object.keys(wizSorting.color_maps));
+        gui.add(wizSorting, 'color_map', Object.keys(wizSorting.color_maps)).name("Color Scheme");
 
         // list all algos
         wizSorting.algos.forEach((v, i)=>{
             gui.add(wizSorting.algos[i], 'enabled').name(v.name);
         });
 
-        gui.add(wizSorting, 'main');
-        gui.add(wizSorting, 'stop');
+        gui.add(wizSorting, 'main').name("Start");
+        gui.add(wizSorting, 'stop').name("Stop");
         //wizSorting.main();
 
         function WizSorting() {
