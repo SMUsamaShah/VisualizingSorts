@@ -1,6 +1,6 @@
 # Visualize and Listen to sorting algorithms
 
-Demo Link: https://smusamashah.github.io/VisualizingSorts/sorting.html
+## [Demo](https://smusamashah.github.io/VisualizingSorts/sorting.html)
 
 Details: https://smusamashah.github.io/blog/2018/10/26/sorting-algorithms
 
