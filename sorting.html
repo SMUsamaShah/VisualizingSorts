@@ -42,24 +42,27 @@
     <script src="/VisualizingSorts/wizsort.js"></script>
     <script src="/VisualizingSorts/algos.js"></script>
     <script type="text/javascript">
-        const algos = [
-            { name: "Bubble Sort", fn: bubbleSort, enabled: false },
-            { name: "Cocktail Sort", fn: cocktailSort, enabled: false },
-            { name: "Insertion Sort", fn: insertionSort, enabled: false },
-            { name: "Gnome Sort", fn: gnomeSort, enabled: false },
-            { name: "Comb Sort", fn: combSort, enabled: false },
-            { name: "Shell Sort", fn: shellSort, enabled: false },
-            { name: "Selection Sort", fn: selectionSort, enabled: false },
-            { name: "Merge Sort", fn: mergeSort, enabled: false },
-            { name: "Parallel Merge Sort", fn: parallelMergeSort, enabled: false },
-            { name: "Radix Sort", fn: radixSort, enabled: false },
-            { name: "Quick Sort", fn: quickSort, enabled: false },
-            { name: "Odd-Even Sort", fn: oddEvenSort, enabled: false },
-            { name: "Cycle Sort", fn: cycleSort, enabled: false },
-            { name: "Heap Sort", fn: heapSort, enabled: false },
-            // _this.oddEvenSort2 ? Sorting.oddEvenSort2 : null,
-        ];
-        let wizSorting = new WizSorting(document.getElementById("container"), algos, "auto");
+        let wizSorting = new WizSorting({
+            container: document.getElementById("bubble_sort_canvas"), 
+            algos : [
+                { name: "Bubble Sort", fn: bubbleSort, enabled: false },
+                { name: "Cocktail Sort", fn: cocktailSort, enabled: false },
+                { name: "Insertion Sort", fn: insertionSort, enabled: false },
+                { name: "Gnome Sort", fn: gnomeSort, enabled: false },
+                { name: "Comb Sort", fn: combSort, enabled: false },
+                { name: "Shell Sort", fn: shellSort, enabled: false },
+                { name: "Selection Sort", fn: selectionSort, enabled: false },
+                { name: "Merge Sort", fn: mergeSort, enabled: false },
+                { name: "Parallel Merge Sort", fn: parallelMergeSort, enabled: false },
+                { name: "Radix Sort", fn: radixSort, enabled: false },
+                { name: "Quick Sort", fn: quickSort, enabled: false },
+                { name: "Odd-Even Sort", fn: oddEvenSort, enabled: false },
+                { name: "Cycle Sort", fn: cycleSort, enabled: false },
+                { name: "Heap Sort", fn: heapSort, enabled: false },
+                // _this.oddEvenSort2 ? Sorting.oddEvenSort2 : null,
+            ],
+            settingsPosition: "auto" // "auto" or "inside"
+        });
     </script>
     
 </body>
