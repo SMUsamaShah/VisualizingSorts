@@ -1,4 +1,4 @@
-function WizSorting(container, algos, settingsPosition = "inside") {
+function WizSorting(args) {
     const _this = this; // damn callbacks
     const MAX_GRID_SIZE = 512; // even this is too slow
 
@@ -10,17 +10,20 @@ function WizSorting(container, algos, settingsPosition = "inside") {
     this.max = this.arraySize;
     this.detail = 3;
     this.color_map = "magma";
+
     let reset = true;
     let algoRepeatCount = 0;
-
-    this.settingsPosition = settingsPosition;
+    
+    this.algos = args.algos;
+    this.container = args.container;
+    this.settingsPosition = args.settingsPosition || "inside";
 
     // functions
     this.start = main;
     this.stop = stop;
     this.onSortsFinished = onSortsFinished;
 
-    this.algos = algos;
+    
 
     let canvas, hiddenCanvas; // offscreen canvas for faster rendering
     let ctx, ctxHidden;
@@ -47,7 +50,7 @@ function WizSorting(container, algos, settingsPosition = "inside") {
     function settingsDatGUI() {
         const datgui = new dat.GUI({ autoPlace: false, });
         if (_this.settingsPosition === "inside") {
-            container.appendChild(datgui.domElement);
+            _this.container.appendChild(datgui.domElement);
         }
         datgui.domElement.style.cssText = 'position:absolute;';
         datgui.add(_this, "arraySize", 8, 512, 8).name("Size");
@@ -71,7 +74,7 @@ function WizSorting(container, algos, settingsPosition = "inside") {
 
     function settingsTweakpane() {
         const pane = new Tweakpane({
-            container: _this.settingsPosition === "inside" ? container : null,
+            container: _this.settingsPosition === "inside" ? _this.container : null,
             title: 'Settings'
         });
         // pane.hidden = true;
@@ -106,7 +109,7 @@ function WizSorting(container, algos, settingsPosition = "inside") {
         canvas.height = MAX_GRID_SIZE;
         ctx = canvas.getContext("2d", { alpha: false }); // on screen context
 
-        container.appendChild(canvas);
+        _this.container.appendChild(canvas);
         canvas.onclick = () => {
             _this.start();
         };
@@ -211,6 +214,7 @@ function WizSorting(container, algos, settingsPosition = "inside") {
     }
 
     function displayAlgoNames(element, algos) {
+        // todo: draw names on canvas
         const div = document.getElementById(element);
         if (div) {
             div.innerText = "";
@@ -342,21 +346,24 @@ function WizSorting(container, algos, settingsPosition = "inside") {
     }
 }
 
-// const algos = [
-//     { name: "Bubble Sort", fn: bubbleSort, enabled: false },
-//     { name: "Cocktail Sort", fn: cocktailSort, enabled: false },
-//     { name: "Insertion Sort", fn: insertionSort, enabled: false },
-//     { name: "Gnome Sort", fn: gnomeSort, enabled: false },
-//     { name: "Comb Sort", fn: combSort, enabled: false },
-//     { name: "Shell Sort", fn: shellSort, enabled: false },
-//     { name: "Selection Sort", fn: selectionSort, enabled: false },
-//     { name: "Merge Sort", fn: mergeSort, enabled: false },
-//     { name: "Parallel Merge Sort", fn: parallelMergeSort, enabled: false },
-//     { name: "Radix Sort", fn: radixSort, enabled: false },
-//     { name: "Quick Sort", fn: quickSort, enabled: false },
-//     { name: "Odd-Even Sort", fn: oddEvenSort, enabled: false },
-//     { name: "Cycle Sort", fn: cycleSort, enabled: false },
-//     { name: "Heap Sort", fn: heapSort, enabled: false },
-//     // _this.oddEvenSort2 ? Sorting.oddEvenSort2 : null,
-// ];
-// let wizSorting = new WizSorting(document.getElementById("bubble_sort_canvas"), algos);
+// let wizSorting = new WizSorting({
+//     container: document.getElementById("bubble_sort_canvas"), 
+//     algos : [
+//         { name: "Bubble Sort", fn: bubbleSort, enabled: false },
+//         { name: "Cocktail Sort", fn: cocktailSort, enabled: false },
+//         { name: "Insertion Sort", fn: insertionSort, enabled: false },
+//         { name: "Gnome Sort", fn: gnomeSort, enabled: false },
+//         { name: "Comb Sort", fn: combSort, enabled: false },
+//         { name: "Shell Sort", fn: shellSort, enabled: false },
+//         { name: "Selection Sort", fn: selectionSort, enabled: false },
+//         { name: "Merge Sort", fn: mergeSort, enabled: false },
+//         { name: "Parallel Merge Sort", fn: parallelMergeSort, enabled: false },
+//         { name: "Radix Sort", fn: radixSort, enabled: false },
+//         { name: "Quick Sort", fn: quickSort, enabled: false },
+//         { name: "Odd-Even Sort", fn: oddEvenSort, enabled: false },
+//         { name: "Cycle Sort", fn: cycleSort, enabled: false },
+//         { name: "Heap Sort", fn: heapSort, enabled: false },
+//         // _this.oddEvenSort2 ? Sorting.oddEvenSort2 : null,
+//     ],
+//     settingsPosition: "auto" // "auto" or "inside"
+// });
