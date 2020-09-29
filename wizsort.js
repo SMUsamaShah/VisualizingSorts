@@ -3,8 +3,8 @@ function WizSorting(args) {
     const MAX_GRID_SIZE = 512; // even this is too slow
 
     this.audio = false;
-    this.ph = 8; // point height
-    this.pw = 8; // point width
+    this.pixelHeight = 8; // point height
+    this.pixelWidth = 8; // point width
     this.arraySize = 128;
     this.speed = 1000; // 1 - 1000
     this.max = this.arraySize;
@@ -19,14 +19,13 @@ function WizSorting(args) {
     this.settingsPosition = args.settingsPosition || "inside";
 
     // functions
-    this.start = main;
+    this.start = start;
     this.stop = stop;
-    this.onSortsFinished = onSortsFinished;
-
-    
+    this.onSortFinished = onSortFinished;
 
     let canvas, hiddenCanvas; // offscreen canvas for faster rendering
-    let ctx, ctxHidden;
+    let highlightCanvas; // canvas for drawing highlights overlay
+    let ctx, ctxHidden, ctxHighlight;
     let audioCtx;
 
     this.color_maps = {
@@ -47,38 +46,13 @@ function WizSorting(args) {
     init();
     renderLoop();
 
-    function settingsDatGUI() {
-        const datgui = new dat.GUI({ autoPlace: false, });
-        if (_this.settingsPosition === "inside") {
-            _this.container.appendChild(datgui.domElement);
-        }
-        datgui.domElement.style.cssText = 'position:absolute;';
-        datgui.add(_this, "arraySize", 8, 512, 8).name("Size");
-        datgui.add(_this, "speed", 1, 1000, 1).name("Speed");
-        datgui.add(_this, "detail", 1, 3, 1).name("Detail");
-        datgui.add(_this, 'audio').name("Sound");
-        datgui.add(_this, 'color_map', Object.keys(_this.color_maps)).name("Color Scheme");
-
-        // list all algos
-        _this.algos.forEach((v, i) => {
-            if (_this.algos[i].enabled == undefined) {
-                _this.algos[i].enabled = true;
-            }
-            datgui.add(_this.algos[i], "enabled").name(v.name);
-        });
-
-        datgui.add(_this, "start").name("(RE)START)");
-        datgui.add(_this, "stop").name("STOP");
-        datgui.close();
-    }
-
     function settingsTweakpane() {
         const pane = new Tweakpane({
             container: _this.settingsPosition === "inside" ? _this.container : null,
             title: 'Settings'
         });
         // pane.hidden = true;
-        pane.expanded = false;
+        pane.expanded = true;
         pane.element.style.cssText = 'position:absolute;';
         pane.addInput(_this, "arraySize", { min: 8, max: 512, step: 8, label: "Size" });
         pane.addInput(_this, "speed", { min: 1, max: 1000, step: 1, label: "Speed" });
@@ -97,6 +71,14 @@ function WizSorting(args) {
 
         pane.addButton({ title: '(RE)START' }).on('click', _this.start);
         pane.addButton({ title: "STOP" }).on('click', _this.stop);
+        pane.addButton({ title: "SHOW/HIDE CUSTOM SORT" }).on('click', ()=>{
+            let sortbox = document.getElementById("customsort");
+            if (sortbox.style.display == 'none') {
+                sortbox.style.display = 'block';
+            } else {
+                sortbox.style.display = 'none';
+            }
+        });
     }
 
     function init() {
@@ -119,18 +101,25 @@ function WizSorting(args) {
         hiddenCanvas = new OffscreenCanvas(MAX_GRID_SIZE, MAX_GRID_SIZE);
         ctxHidden = hiddenCanvas.getContext("2d");
 
-        _this.ph = _this.pw = MAX_GRID_SIZE / _this.arraySize;
+        highlightCanvas = new OffscreenCanvas(MAX_GRID_SIZE, MAX_GRID_SIZE);
+        ctxHighlight = highlightCanvas.getContext("2d");
+        ctxHighlight.globalCompositeOperation = 'lighter';
+        
+
+        _this.pixelHeight = _this.pixelWidth = MAX_GRID_SIZE / _this.arraySize;
 
         // fill the canvas with selected color scheme only, nothing to do with data
         for (let i = 0; i < _this.arraySize; i++) {
-            drawPoint(i, 0, i * _this.ph, MAX_GRID_SIZE, _this.ph);
+            drawPixel(i, 0, i * _this.pixelHeight, MAX_GRID_SIZE, _this.pixelHeight, false);
         }
     };
 
 
     function renderLoop() {
-        // draw from offscreen canvas
+        // copy from offscreen canvas
         ctx.drawImage(ctxHidden.canvas, 0, 0);
+        
+        ctx.drawImage(ctxHighlight.canvas, 0, 0);
 
         // alternate
         // let bitmap = offCanvas.transferToImageBitmap();
@@ -139,13 +128,10 @@ function WizSorting(args) {
         requestAnimationFrame(renderLoop);
     };
 
-
-    // let recorder = new CanvasRecorder(iterationsanvas);
-
-    function main() {
+    function start() {
         reset = !reset;
         _this.max = _this.arraySize;
-        _this.ph = _this.pw = MAX_GRID_SIZE / _this.arraySize;
+        _this.pixelHeight = _this.pixelWidth = MAX_GRID_SIZE / _this.arraySize;
 
         // recorder.start();
 
@@ -155,7 +141,7 @@ function WizSorting(args) {
             return;
         }
 
-        displayAlgoNames("algonames", selectedAlgos);
+        displayAlgoNames(document.getElementById("algonames"), selectedAlgos);
 
         // number of times an algo will be drawn on canvas
         algoRepeatCount = Math.ceil(_this.arraySize / selectedAlgos.length);
@@ -170,12 +156,12 @@ function WizSorting(args) {
         const n = selectedAlgos.length * algoRepeatCount;
         let dataArrays = deriveRandomizedArrays(numbers, n);
 
-        // draw
+        // draw the randomized data
         for (let i = 0; i < n; i++) {
             drawArray(dataArrays[i], i);
         }
 
-        runSortAlgos(dataArrays, selectedAlgos);
+        runAlgorithms(dataArrays, selectedAlgos);
     }
 
     /**
@@ -193,35 +179,32 @@ function WizSorting(args) {
     }
 
     // apply selected sorting function on each array
-    function runSortAlgos(dataArrays, algos) {
-        let numOps = [];
-        let x = 0;
-        // for (let i = 0; i < algos.length; i++) {
+    function runAlgorithms(dataArrays, algos) {
+        let results = [];
+        let xpos = 0; //x-axis to draw on
+        
         for (const algo of algos) {
             for (let j = 0; j < algoRepeatCount; j++) {
-                // const algo = algos[i].fn;
-                // run algo
-                const arr = dataArrays[x];
-                let ops = algo.fn(arr, drawSleepFn(arr, x));
-                x = x + 1;
-                numOps.push(ops);
+                const arr = dataArrays[xpos];
+                let result = algo.fn(arr, drawFn(arr, xpos));
+                results.push(result);
+                xpos++;
             }
         }
 
-        Promise.all(numOps).then(values => {
-            _this.onSortsFinished(values);
+        Promise.all(results).then(values => {
+            _this.onSortFinished(values);
         });
     }
 
-    function displayAlgoNames(element, algos) {
+    function displayAlgoNames(elm, algos) {
         // todo: draw names on canvas
-        const div = document.getElementById(element);
-        if (div) {
-            div.innerText = "";
+        if (elm) {
+            elm.innerText = "";
             algos.forEach((algo, i) => {
-                div.innerText += algo.name;
+                elm.innerText += algo.name;
                 if (i < algos.length - 1) {
-                    div.innerText += " |  ";
+                    elm.innerText += " |  ";
                 }
             });
         }
@@ -234,7 +217,7 @@ function WizSorting(args) {
         }
     }
 
-    function onSortsFinished(e) {
+    function onSortFinished(e) {
         // console.log("Finished", e);
         // recorder.stop();
         // recorder.save();
@@ -260,60 +243,75 @@ function WizSorting(args) {
     }
 
     // draw and wait
-    function drawSleepFn(arr, x) {
+    function drawFn(arr, xpos) {
         return async function (detail = 1, ...indexes) {
-            if (_this.detail != detail) return;
+            let lastArg = indexes[indexes.length-1];
+            let highlight = false;
+            if (typeof lastArg == 'boolean') {
+                highlight = lastArg;
+                indexes.pop();
+            }
+
+            if (detail > _this.detail) return;
             if (reset) return Promise.reject("stopped");
 
-            draw_indexes(arr, x, ...indexes);
+            drawIndexes(arr, xpos, highlight, ...indexes);
             await sleep(1000 - _this.speed);
         }
     }
 
-    // draw immediately
-    function draw(arr, x, detail = 1, ...indexes) {
-        if (_this.detail != detail) return;
-
-        draw_indexes(arr, x, ...indexes);
-    }
-
     // draw only indexes of array if provided, full array otherwise
-    function draw_indexes(arr, x, ...indexes) {
+    function drawIndexes(arr, xpos, highlight=false, ...indexes) {
         if (!arr)
             return;
 
+        // draw whole array if no indexes were specified
         if (indexes.length == 0) {
-            drawArray(arr, x);
+            drawArray(arr, xpos);
             return;
         }
 
         for (let i = 0; i < indexes.length; i++) {
             const j = indexes[i];
-            drawPoint(arr[j], x * _this.pw, j * _this.ph, _this.pw, _this.ph);
+            drawPixel(arr[j], xpos * _this.pixelWidth, j * _this.pixelHeight, _this.pixelWidth, _this.pixelHeight);
+            if (highlight) {
+                clearHighlights(xpos * _this.pixelWidth);
+                highlightPixel(arr[j], xpos * _this.pixelWidth, j * _this.pixelHeight, _this.pixelWidth, _this.pixelHeight);
+            }
 
             // play the music
-            if (x === 0 && _this.audio) {
+            if (xpos === 0 && _this.audio) {
                 playAudio(j, 1.7);
             }
         }
     }
 
-    async function sleep(ms) {
-        return new Promise(rs => setTimeout(rs, ms));
-    }
-
     // draw array on position x
-    function drawArray(arr, x) {
+    function drawArray(arr, xpos) {
         for (let i = arr.length - 1; i >= 0; i--) {
-            drawPoint(arr[i], x * _this.pw, i * _this.ph, _this.pw, _this.ph);
+            drawPixel(arr[i], xpos * _this.pixelWidth, i * _this.pixelHeight, _this.pixelWidth, _this.pixelHeight);
         }
     }
 
+    function clearHighlights(xpos) {
+        ctxHighlight.clearRect(xpos, 0, _this.pixelWidth, MAX_GRID_SIZE);
+    }
+
     // draw number as HSL block with constant saturation and luminence
-    function drawPoint(hue, x, y, w, h, highlight = false) {
+    function drawPixel(hue, x, y, w, h) {
         let j = rescale(hue, 0, _this.max, 0, 360);
         ctxHidden.fillStyle = _this.color_maps[_this.color_map](hue, _this.max);
         ctxHidden.fillRect(x, y, w, h);
+    }
+
+    function highlightPixel(hue, x, y, w, h) {
+        let j = rescale(hue, 0, _this.max, 0, 360);
+        ctxHighlight.fillStyle = `rgba(255,255,255, 0.8)`;
+        ctxHighlight.fillRect(x, y, w, h);
+    }
+
+    async function sleep(ms) {
+        return new Promise(rs => setTimeout(rs, ms));
     }
 
     // rescale a number from old range to new range
@@ -321,9 +319,9 @@ function WizSorting(args) {
         const old_range = old_max - old_min;
         const new_range = new_max - new_min;
 
-        const ratio = new_range / old_range;
+        const scale = new_range / old_range;
 
-        return new_min + number * ratio;
+        return new_min + number * scale;
     }
 
     function shuffle(array) {
