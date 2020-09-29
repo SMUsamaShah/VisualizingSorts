@@ -47,7 +47,7 @@ async function cycleSort(arr, draw) {
             if (arr[i] < item) {
                 pos++;
             }
-            await draw(3, i, true);
+            await draw(3, i, true /*highlight*/); 
         }
 
         if (pos === cycleStart) {
@@ -63,15 +63,13 @@ async function cycleSort(arr, draw) {
         // [arr[pos], item] = [item, arr[pos]];
         await draw(1, pos);
 
-        _w += 1;
-
         while (pos != cycleStart) {
             pos = cycleStart;
             for (let i = cycleStart + 1; i < n; i++) {
                 if (arr[i] < item) {
                     pos++;
                 }
-                //await draw(3, i);
+                await draw(3, i, true);
             }
             while (item === arr[pos]) {
                 pos++;
@@ -79,13 +77,9 @@ async function cycleSort(arr, draw) {
             let tt = arr[pos];
             arr[pos] = item;
             item = tt;
-            _w++;
             await draw(1, pos);
         }
     }
-
-    console.log(`cyclesort ${_w}`);
-    return _w;
 }
 </textarea>
     <div id="container">
