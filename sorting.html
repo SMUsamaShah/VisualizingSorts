@@ -172,8 +172,16 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                 _canvas.setAttribute("height", MAX_GRID_SIZE);
                 _ctx = _canvas.getContext("2d", { alpha: false }); // on screen context
 
+
                 // everything will be rendered on this off-screen canvas
-                offscreenCanvas = new OffscreenCanvas(MAX_GRID_SIZE, MAX_GRID_SIZE);
+                if (typeof(window.OffscreenCanvas) != "undefined") {
+                  // chromium only
+                  offscreenCanvas = new OffscreenCanvas(MAX_GRID_SIZE, MAX_GRID_SIZE);
+                } else {
+                  offscreenCanvas = document.createElement("canvas");
+                  offscreenCanvas.width = MAX_GRID_SIZE;
+                  offscreenCanvas.height = MAX_GRID_SIZE;
+                }
                 ctx = offscreenCanvas.getContext('2d');
                 // and will be copied to on-screen canvas in requestAnimationFrame
 
