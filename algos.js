@@ -176,7 +176,7 @@ async function shellSort(arr, draw_wait) {
             const temp = arr[i]; // pick element on that position
 
             let j = i
-            // await drawAndSleep(data, x, j, j-gap, true);
+            // await draw_arr(data, x, j, j-gap, true);
             while (j >= gap && arr[j - gap] > temp) {
                 arr[j] = arr[j - gap];
                 await draw_wait(arr, 3, j);
@@ -185,7 +185,7 @@ async function shellSort(arr, draw_wait) {
                 _c++;
             }
             arr[j] = temp;
-            draw_wait(arr, 3, j);
+            await draw_wait(arr, 3, j);
             
             _c2++;
             await draw_wait(arr, 2);
@@ -292,7 +292,7 @@ async function parallelMergeSort(arr, draw_arr) {
 
         await merge(_arr, i1, m, m + 1, i2);
 
-        await drawAndSleep(_arr, x, 1);
+        await draw_arr(_arr, x, 1);
     };
 
     const merge = async function (_arr, i1, i2, j1, j2) {
@@ -317,10 +317,10 @@ async function parallelMergeSort(arr, draw_arr) {
                 _arr[k] = a2[j];
                 j++;
             }
-            await drawAndSleep(_arr, x, 3, k);
+            await draw_arr(_arr, x, 3, k);
             k++;
         }
-        await drawAndSleep(_arr, x, 2);
+        await draw_arr(_arr, x, 2);
     };
 
     await split(arr, 0, arr.length - 1);
