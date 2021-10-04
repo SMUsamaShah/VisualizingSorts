@@ -68,6 +68,24 @@ async function shellSort(arr, draw_callback) {
   }
 }
     </textarea>
+    <button onClick="generateLink()">Generate share link</button><a id="share_link" href="#"></a>
+    <script type="text/javascript">
+    function generateLink() {
+        let algoInURLForm = LZString.compressToEncodedURIComponent(document.getElementById("mySort").value);
+        let link = document.getElementById("share_link");
+        link.text = "copy this link";
+        link.href = `${window.location.origin}${window.location.pathname}#${algoInURLForm}`;
+        link.onclick=()=>{window.location.hash = algoInURLForm; window.location.reload();};
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.location.hash && window.location.hash.length > 1) {
+            let algoCode = decodeURI(window.location.hash.substring(1));
+            document.getElementById("mySort").value = LZString.decompressFromEncodedURIComponent(algoCode);
+            document.getElementById("mySort").dispatchEvent(new Event("input"));
+        }
+    });
+    </script>
+    
     <div>
 <b>draw_callback(arr, detail_level [, ...array_indexes]).</b><br/>
 <b>arr</b>: shuffled array of positive integers<br/>
@@ -80,6 +98,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.3/dat.gui.js"></script>
     <script src="./util.js"></script>
     <script src="./algos.js"></script>
+    <script src="./lz-string.min.js"></script>
     <script type="text/javascript">
         var wizSorting = new WizSorting();
         var gui = new dat.GUI();
