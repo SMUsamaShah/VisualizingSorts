@@ -39,7 +39,7 @@
     </div>
     <div style="position: fixed; top: 15px; left: 15px; width: 400px; height: 400px">
     <textarea id="mySort" style="width: 400px; height: 400px">
-async function shellSort(arr, draw_callback) {
+async function shellSort(arr, draw) {
   const n = arr.length;
   const gaps = [15, 10, 1];
   let _c = 0, _c2 = 0;
@@ -53,18 +53,18 @@ async function shellSort(arr, draw_callback) {
       let j = i
       while (j >= gap && arr[j - gap] > temp) {
         arr[j] = arr[j - gap];
-        await draw_callback(arr, 3, j);
+        await draw(arr, 3, j);
 
         j -= gap;
         _c++;
       }
       arr[j] = temp;
-      draw_callback(arr, 3, j);
+      draw(arr, 3, j);
       
       _c2++;
-      await draw_callback(arr, 2);
+      await draw(arr, 2);
     }
-    await draw_callback(arr, 1);
+    await draw(arr, 1);
   }
 }
     </textarea>
@@ -87,7 +87,7 @@ async function shellSort(arr, draw_callback) {
     </script>
     
     <div>
-<b>draw_callback(arr, detail_level [, ...array_indexes]).</b><br/>
+<b>await draw(arr, detail_level [, ...array_indexes]).</b><br/>
 <b>arr</b>: shuffled array of positive integers<br/>
 <b>detail_level</b>: 1|2|3. Used by "Detail" in control panel.<br/>
 <b>array_indexes</b>: (optional) draw only these indexes. <br/>
