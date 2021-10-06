@@ -18,7 +18,7 @@ async function bubbleSort(arr, draw_arr) {
     do {
         swapped = false;
         for (let j = 0; j < n - 1; j++) {
-            // await sleepHighlight(arr, x, j+1, j);
+            
             if (arr[j + 1] < arr[j]) {
                 swap(arr, j + 1, j);
                 swapped = true;
@@ -144,7 +144,7 @@ async function combSort(arr, draw_arr) {
         }
 
         for (let i = 0; i + gap < n; i++) { // start looping from item near list end
-            // await sleepHighlight(data, x, i, i+gap);
+            // await sleepHighlight(data, i, i+gap);
             if (arr[i] > arr[i + gap]) { // comparisons will increase with gap decreasing on each iteration
                 swap(arr, i, i + gap);
                 sorted = false;
@@ -176,7 +176,7 @@ async function shellSort(arr, draw_wait) {
             const temp = arr[i]; // pick element on that position
 
             let j = i
-            // await draw_arr(data, x, j, j-gap, true);
+            
             while (j >= gap && arr[j - gap] > temp) {
                 arr[j] = arr[j - gap];
                 await draw_wait(arr, 3, j);
@@ -292,7 +292,7 @@ async function parallelMergeSort(arr, draw_arr) {
 
         await merge(_arr, i1, m, m + 1, i2);
 
-        await draw_arr(_arr, x, 1);
+        await draw_arr(_arr, 1);
     };
 
     const merge = async function (_arr, i1, i2, j1, j2) {
@@ -317,10 +317,10 @@ async function parallelMergeSort(arr, draw_arr) {
                 _arr[k] = a2[j];
                 j++;
             }
-            await draw_arr(_arr, x, 3, k);
+            await draw_arr(_arr, 3, k);
             k++;
         }
-        await draw_arr(_arr, x, 2);
+        await draw_arr(_arr, 2);
     };
 
     await split(arr, 0, arr.length - 1);
