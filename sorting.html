@@ -297,7 +297,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
 
                             // play the music
                             if (x === 0 && _this.audio) {
-                                playAudio(j, 1.7);
+                                playAudio(arr[j]);
                             }
                         }
                     }
@@ -321,18 +321,29 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                 console.timeEnd("algorun");
             }
 
-            function playAudio(freq, time = 1.5) {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
+            function playAudio(value) {
+                const now = audioCtx.currentTime;
+                const normalized = Math.max(0, Math.min(1,
+                    (value - 1) / Math.max(1, _this.max - 1)));
+                const pentatonic = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33];
+                const note = pentatonic[Math.round(normalized * (pentatonic.length - 1))];
+                const frequency = 130.81 * Math.pow(2, note / 12);
+                const noteDuration = 0.09;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, now);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                osc.type = 'sine';
 
-                osc.frequency.value = 500 + freq * 7;
-                osc.start(); // play sound
-                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + time); // reduce it gradually
-                setTimeout(() => osc.stop(), 300);
-                //o.stop();
+                // A short envelope prevents clicks and keeps fast sorts from becoming noise.
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.035, now + 0.006);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + noteDuration);
+
+                osc.start(now);
+                osc.stop(now + noteDuration + 0.01);
             }
 
             // setTimeout.dt = 0;
