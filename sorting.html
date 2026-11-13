@@ -103,7 +103,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
     <script type="text/javascript">
         var wizSorting = new WizSorting();
         var gui = new dat.GUI();
-        gui.add(wizSorting, 'audio').name("Sound (ugly)");
+        gui.add(wizSorting, 'audio').name("Sound").onChange(wizSorting.updateAudio);
         gui.add(wizSorting, 'arraySize', 8, 512, 8).name("Size");
         gui.add(wizSorting, 'stepDelay', 1, 1000, 1).name("Delay(ms)");
         gui.add(wizSorting, 'detail', 1, 3, 1).name("Detail");
@@ -138,6 +138,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
             this.main = start;
             this.stop = stop;
             this.onSortsFinished = onAllSortingFinished;
+            this.updateAudio = updateAudio;
 
             this.algos = [
                 { name: "Custom", fn: (arr, draw_fn)=>{}, enabled: true},
@@ -165,7 +166,9 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
             }
             update_my_sort();
 
-            var audioCtx;
+            let audioCtx, chime, audioOutput, audioTimer, leadSort, previousColumn;
+            const audioStepMs = 120;
+            const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
             var _ctx, ctx;
             var _canvas, offscreenCanvas; // offscreen canvas for faster rendering
 
@@ -186,7 +189,6 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
 
             // init
             (function () {
-                audioCtx = new AudioContext();
                 _canvas = document.getElementById("cvs");
                 _canvas.setAttribute("width", MAX_GRID_SIZE);
                 _canvas.setAttribute("height", MAX_GRID_SIZE);
@@ -227,6 +229,8 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
 
             function start() {
                 reset = true;
+                leadSort = null;
+                stopAudio();
                 _this.max = _this.arraySize;
                 _this.ph = _this.pw = MAX_GRID_SIZE / _this.arraySize;
 
@@ -263,6 +267,10 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                     drawArray(arrays[i], i);
                 }
 
+                const lead = { column: arrays[0] };
+                leadSort = lead;
+                updateAudio();
+
                 // run algos by applying selected algo on each array
                 console.time("algorun");
                 let calls = [];
@@ -271,7 +279,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                     for (let j = 0; j < repeatCount; j++) {
                         const sortingAlgo = selectedAlgos[i].fn;
                         if (sortingAlgo != null)
-                            var c = sortingAlgo(arrays[x], drawcb(x++));
+                            var c = sortingAlgo(arrays[x], drawcb(x++, lead));
                             calls.push(c);
                     }
                 }
@@ -281,10 +289,15 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                 });
             }
 
-            function drawcb(x) {
+            function drawcb(x, lead) {
                 return async function draw_and_wait(arr, detail = 1, ...indexes) {
                     if (_this.detail != detail) return;
-
+                    if (x === 0) {
+                        lead.column = arr;
+                        if (audioOutput && leadSort === lead && audioTimer == null) {
+                            audioTimer = setTimeout(playSortAudio, audioStepMs);
+                        }
+                    }
                     // draw given indexes of array
                     if (arguments.length <= 2) {
                         // draw whole array if no indexes specified
@@ -294,11 +307,6 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                         for (let i = 0; i < indexes.length; i++) {
                             const j = indexes[i];
                             drawPoint(arr[j], x * _this.pw, j * _this.ph, _this.pw, _this.ph);
-
-                            // play the music
-                            if (x === 0 && _this.audio) {
-                                playAudio(arr[j]);
-                            }
                         }
                     }
 
@@ -308,7 +316,8 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
             }
 
             function stop () {
-                // if(_this.audio && osc) osc.stop();
+                leadSort = null;
+                stopAudio();
                 if(reset == false) {
                     reset = true;
                 }
@@ -321,29 +330,113 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                 console.timeEnd("algorun");
             }
 
-            function playAudio(value) {
+            function updateAudio() {
+                if (!_this.audio) {
+                    stopAudio();
+                    return;
+                }
+                try {
+                    const Audio = window.AudioContext || window.webkitAudioContext;
+                    if (!Audio) return;
+                    if (!audioCtx) audioCtx = new Audio();
+                    if (audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+                    if (!chime) chime = createChime();
+                    if (!leadSort || audioOutput) return;
+                    previousColumn = leadSort.column.slice();
+                    const output = audioCtx.createGain();
+                    output.gain.value = 0.30;
+                    output.connect(audioCtx.destination);
+                    audioOutput = output;
+                    audioTimer = setTimeout(playSortAudio, audioStepMs);
+                } catch (error) {
+                    console.warn("Could not start sorting audio", error);
+                }
+            }
+
+            function stopAudio() {
+                clearTimeout(audioTimer);
+                audioTimer = null;
+                if (!audioOutput) return;
+                const output = audioOutput;
+                audioOutput = null;
+                output.gain.setTargetAtTime(0, audioCtx.currentTime, 0.008);
+                setTimeout(() => output.disconnect(), 50);
+            }
+
+            function playSortAudio() {
+                audioTimer = null;
+                if (!_this.audio || !leadSort) {
+                    stopAudio();
+                    return;
+                }
+                if (audioCtx.state !== 'running') return;
                 const now = audioCtx.currentTime;
-                const normalized = Math.max(0, Math.min(1,
-                    (value - 1) / Math.max(1, _this.max - 1)));
-                const pentatonic = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33];
-                const note = pentatonic[Math.round(normalized * (pentatonic.length - 1))];
-                const frequency = 130.81 * Math.pow(2, note / 12);
-                const noteDuration = 0.09;
 
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(frequency, now);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                // One sound at most every 120 ms, regardless of how fast the sorts draw.
+                const column = leadSort.column;
+                let largestChange = 0;
+                let movedValue = 0;
+                let ascending = true;
+                let descending = true;
+                const length = column.length;
+                if (length !== previousColumn.length) previousColumn = column.slice();
+                for (let i = 0; i < length; i++) {
+                    const value = column[i];
+                    const change = Math.abs(value - previousColumn[i]);
+                    if (change > largestChange) {
+                        largestChange = change;
+                        movedValue = value;
+                    }
+                    previousColumn[i] = value;
+                    if (value !== i + 1) ascending = false;
+                    if (value !== length - i) descending = false;
+                }
 
-                // A short envelope prevents clicks and keeps fast sorts from becoming noise.
-                gain.gain.setValueAtTime(0.0001, now);
-                gain.gain.exponentialRampToValueAtTime(0.035, now + 0.006);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + noteDuration);
+                if (!largestChange) return;
+                if (ascending || descending) {
+                    leadSort = null;
+                    [0, 7, 12, 16, 19, 24].forEach((note, i) => playChime(note, now + 0.14 + i * 0.12));
+                } else {
+                    const ratio = (movedValue - 1) / Math.max(1, length - 1);
+                    const step = Math.max(0, Math.min(scale.length - 1, Math.round(ratio * (scale.length - 1))));
+                    playChime(scale[step], now);
+                }
+            }
 
-                osc.start(now);
-                osc.stop(now + noteDuration + 0.01);
+            function playChime(note, time) {
+                const source = audioCtx.createBufferSource();
+                source.buffer = chime;
+                source.playbackRate.value = Math.pow(2, note / 12);
+                source.connect(audioOutput);
+                source.start(time);
+            }
+
+            function createChime() {
+                // Bake the bell harmonics and stereo reflections into one reusable sample.
+                const rate = Math.min(24000, audioCtx.sampleRate);
+                const dry = new Float32Array(Math.round(rate * 0.56));
+                for (let i = 0; i < dry.length; i++) {
+                    const time = i / rate;
+                    const phase = 2 * Math.PI * 261.63 * time;
+                    const envelope = Math.min(1, time / 0.006, (dry.length - 1 - i) / (rate * 0.04));
+                    dry[i] = envelope * (
+                        0.72 * Math.sin(phase) * Math.exp(-time * 10) +
+                        0.20 * Math.sin(phase * 2) * Math.exp(-time * 23) +
+                        0.085 * Math.sin(phase * 3.01) * Math.exp(-time * 51) +
+                        0.04 * Math.sin(phase * 4.17) * Math.exp(-time * 85)
+                    );
+                }
+                const reflections = [Math.round(rate * 0.079), Math.round(rate * 0.121)];
+                const buffer = audioCtx.createBuffer(2, dry.length + reflections[1], rate);
+                for (let channel = 0; channel < 2; channel++) {
+                    const samples = buffer.getChannelData(channel);
+                    samples.set(dry);
+                    for (let i = 0; i < dry.length; i++) {
+                        samples[i + reflections[channel]] += 0.19 * dry[i];
+                        samples[i + reflections[1 - channel]] += 0.07 * dry[i];
+                    }
+                }
+                return buffer;
             }
 
             // setTimeout.dt = 0;
