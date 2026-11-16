@@ -92,6 +92,7 @@ async function shellSort(arr, draw) {
 <b>detail_level</b>: 1|2|3. Used by "Detail" in control panel.<br/>
 <b>array_indexes</b>: (optional) draw only these indexes. <br/>
 Draw whole array if no index specified.<br/>
+Enable <b>Highlight swaps</b> in the control panel to briefly mark the indexes supplied to <code>draw()</code> in gold.<br/>
 Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
 <a href="https://github.com/SMUsamaShah/VisualizingSorts">GitHub</a>
     </div>
@@ -107,6 +108,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
         gui.add(wizSorting, 'arraySize', 8, 512, 8).name("Size");
         gui.add(wizSorting, 'stepDelay', 1, 1000, 1).name("Delay(ms)");
         gui.add(wizSorting, 'detail', 1, 3, 1).name("Detail");
+        gui.add(wizSorting, 'highlightSwappedIndexes').name("Highlight swaps");
 
         gui.add(wizSorting, 'color_map', Object.keys(wizSorting.color_maps)).name("Color Scheme");
 
@@ -130,9 +132,11 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
             this.stepDelay = 10;
             this.max = this.arraySize;
             this.detail = 3;
+            this.highlightSwappedIndexes = false;
             this.color_map = 'magma';
             let reset = true;
             let repeatCount = 0;
+            let highlightedColumns = new Map();
 
             // functions
             this.main = start;
@@ -218,6 +222,14 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                 
                 // copy from offscreen canvas to onscreen canvas
                 _ctx.drawImage(ctx.canvas, 0, 0);
+                if (_this.highlightSwappedIndexes && highlightedColumns.size) {
+                    _ctx.fillStyle = "#ffdf00";
+                    for (const [column, indexes] of highlightedColumns) {
+                        for (const index of indexes) {
+                            _ctx.fillRect(column * _this.pw, index * _this.ph, _this.pw, _this.ph);
+                        }
+                    }
+                }
 
                 requestAnimationFrame(renderLoop);
             }
@@ -227,6 +239,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
 
             function start() {
                 reset = true;
+                highlightedColumns = new Map();
                 _this.max = _this.arraySize;
                 _this.ph = _this.pw = MAX_GRID_SIZE / _this.arraySize;
 
@@ -282,6 +295,7 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
             }
 
             function drawcb(x) {
+                const highlights = highlightedColumns;
                 return async function draw_and_wait(arr, detail = 1, ...indexes) {
                     if (_this.detail != detail) return;
 
@@ -302,8 +316,18 @@ Can use `swap(arr, index1, index2)` to swap elements of array.<br/>
                         }
                     }
 
-                    // wait after drawing
-                    await sleep(_this.stepDelay);
+                    if (_this.highlightSwappedIndexes && indexes.length) {
+                        highlights.set(x, indexes);
+                    } else {
+                        highlights.delete(x);
+                    }
+
+                    // Wait after drawing, then clear this step's highlight if it is still current.
+                    try {
+                        await sleep(_this.stepDelay);
+                    } finally {
+                        if (highlights.get(x) === indexes) highlights.delete(x);
+                    }
                 }
             }
 
